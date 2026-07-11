@@ -1,5 +1,5 @@
 {
-  "baseUrl": "https://cdn.jsdelivr.net/gh/xiaoweinewb/my-photo-site@main/",
+  "baseUrl": "https://gitee.com/xiao-wei-99/my-photo-site/raw/main/",
 
   "nav": [
     { "label": "首页", "key": "home" },
