@@ -1,9 +1,6 @@
 [build]
-  command = "echo 'Static site - no build needed'"
-  publish = "."
-
-[build.processing]
-  skip_processing = false
+  command = "mkdir -p public && cp -r index.html config.json images public/"
+  publish = "public"
 
 [[headers]]
   for = "/*"
