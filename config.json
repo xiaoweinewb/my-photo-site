@@ -1,5 +1,5 @@
 {
-  "baseUrl": "",
+  "baseUrl": "https://cdn.jsdelivr.net/gh/xiaoweinewb/my-photo-site@main/",
 
   "nav": [
     { "label": "首页", "key": "home" },
