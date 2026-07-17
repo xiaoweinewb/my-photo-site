@@ -32,7 +32,9 @@
 
     /* Slider */
     #slider { position: fixed; inset: 0; width: 100%; height: 100%; }
-    .slide { position: absolute; inset: 0; background-size: cover; background-position: center; transition: opacity 1.5s ease; }
+    .slide { position: absolute; inset: 0; transition: opacity 1.5s ease; }
+    .slide-backdrop { position: absolute; inset: -10%; background-size: cover; background-position: center; filter: blur(60px); }
+    .slide-img { position: absolute; inset: 0; background-size: contain; background-position: center; background-repeat: no-repeat; }
     .overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.4); }
 
     /* Site Header */
@@ -95,6 +97,56 @@
     .footer {
       position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
       z-index: 50; font-size: 12px; color: rgba(255,255,255,0.3); letter-spacing: 1px;
+    }
+
+    /* ===== Speed Control ===== */
+    .speed-toggle {
+      position: fixed; bottom: 30px; right: 50px; z-index: 50;
+      width: 28px; height: 28px; cursor: pointer;
+      opacity: 0.5; transition: opacity 0.2s;
+    }
+    .speed-toggle:hover { opacity: 0.9; }
+    .speed-toggle svg { width: 28px; height: 28px; overflow: visible; }
+
+    .speed-panel {
+      position: fixed; bottom: 66px; right: 50px; z-index: 45;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-radius: 8px; padding: 10px 14px;
+      display: none; align-items: center; gap: 8px;
+      opacity: 0; transform: translateY(-8px);
+      transition: all 0.25s ease;
+    }
+    .speed-panel.open { display: flex; opacity: 1; transform: translateY(0); }
+    .speed-panel .icon { font-size: 15px; line-height: 1; }
+    .speed-panel input[type="range"] {
+      -webkit-appearance: none; appearance: none;
+      width: 100px; height: 3px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 2px; outline: none;
+      cursor: pointer;
+    }
+    .speed-panel input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: #fff;
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    .speed-panel input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+    .speed-panel input[type="range"]::-moz-range-thumb {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: #fff;
+      cursor: pointer; border: none;
+    }
+    .speed-label {
+      font-size: 11px; color: rgba(255,255,255,0.5);
+      letter-spacing: 0.5px; min-width: 28px; text-align: center;
     }
 
     /* ===== Settings Modal ===== */
@@ -181,10 +233,18 @@
       background: #fff;
       color: #000;
     }
+    .settings-grid.batch .settings-img,
+    .settings-grid.batch .settings-img .check {
+      transition: none !important;
+    }
 
     .settings-actions {
-      display: flex; justify-content: flex-end; gap: 10px;
+      display: flex; justify-content: space-between; gap: 10px;
       padding-top: 16px; border-top: 1px solid #2a2a2a;
+    }
+    .settings-actions-left,
+    .settings-actions-right {
+      display: flex; gap: 10px;
     }
     .settings-btn {
       padding: 8px 20px; border-radius: 6px;
@@ -304,6 +364,16 @@
     </svg>
   </div>
 
+  <!-- Speed Toggle -->
+  <div class="speed-toggle" id="speedToggle" title="轮播速度">
+    <svg viewBox="0 0 36 36">
+      <circle cx="18" cy="18" r="14" stroke="rgba(255,255,255,0.85)" stroke-width="1.5" fill="none"/>
+      <circle cx="18" cy="18" r="2" fill="rgba(255,255,255,0.85)"/>
+      <line x1="18" y1="18" x2="18" y2="8" stroke="rgba(255,255,255,0.85)" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="18" y1="18" x2="25" y2="21" stroke="rgba(255,255,255,0.85)" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+  </div>
+
   <!-- Hamburger Menu -->
   <div class="hamburger-menu">
     <button class="hamburger-btn" id="menuToggle">
@@ -316,6 +386,14 @@
 
   <!-- Tagline -->
   <div class="tagline" id="tagline"></div>
+
+  <!-- Speed Panel -->
+  <div class="speed-panel" id="speedPanel">
+    <span class="icon">🐢</span>
+    <input type="range" id="speedRange" min="1500" max="8000" value="4000" step="500">
+    <span class="speed-label" id="speedLabel">4s</span>
+    <span class="icon">🐇</span>
+  </div>
 
   <!-- Footer -->
   <div class="footer">Designed by xiaowei</div>
@@ -347,8 +425,14 @@
       <div class="settings-tabs" id="settingsTabs"></div>
       <div class="settings-grid" id="settingsGrid"></div>
       <div class="settings-actions">
-        <button class="settings-btn settings-btn-reset" id="settingsReset">重置为默认</button>
-        <button class="settings-btn settings-btn-save" id="settingsSave">保存</button>
+        <div class="settings-actions-left">
+          <button class="settings-btn settings-btn-reset" id="settingsSelectAll">全选</button>
+          <button class="settings-btn settings-btn-reset" id="settingsDeselectAll">全不选</button>
+        </div>
+        <div class="settings-actions-right">
+          <button class="settings-btn settings-btn-reset" id="settingsReset">重置为默认</button>
+          <button class="settings-btn settings-btn-save" id="settingsSave">保存</button>
+        </div>
       </div>
     </div>
   </div>
@@ -432,17 +516,48 @@
       slideCurrent = 0;
       if (!photos || photos.length === 0) return;
       photos.forEach(function(src, i) {
-        var div = document.createElement('div');
-        div.className = 'slide';
-        div.style.backgroundImage = 'url(' + imgUrl(src) + ')';
-        div.style.opacity = i === 0 ? '1' : '0';
-        slider.appendChild(div);
+        var wrapper = document.createElement('div');
+        wrapper.className = 'slide';
+        wrapper.style.opacity = i === 0 ? '1' : '0';
+        var backdrop = document.createElement('div');
+        backdrop.className = 'slide-backdrop';
+        backdrop.style.backgroundImage = 'url(' + imgUrl(src) + ')';
+        wrapper.appendChild(backdrop);
+        var img = document.createElement('div');
+        img.className = 'slide-img';
+        img.style.backgroundImage = 'url(' + imgUrl(src) + ')';
+        wrapper.appendChild(img);
+        slider.appendChild(wrapper);
       });
       var overlay = document.createElement('div');
       overlay.className = 'overlay';
       slider.appendChild(overlay);
       restartTimer();
     }
+
+    // ===== Speed Control =====
+    var speedToggle = document.getElementById('speedToggle');
+    var speedPanel = document.getElementById('speedPanel');
+    var speedRange = document.getElementById('speedRange');
+    var speedLabel = document.getElementById('speedLabel');
+
+    speedToggle.addEventListener('click', function(e) {
+      e.stopPropagation();
+      speedPanel.classList.toggle('open');
+    });
+
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.speed-panel') && !e.target.closest('.speed-toggle')) {
+        speedPanel.classList.remove('open');
+      }
+    });
+
+    speedRange.addEventListener('input', function() {
+      var ms = parseInt(this.value);
+      currentConfig.slideInterval = ms;
+      speedLabel.textContent = (ms / 1000).toFixed(1) + 's';
+      restartTimer();
+    });
 
     // ===== Category Switching =====
     function switchCategory(key) {
@@ -504,9 +619,14 @@
     var tabsEl = document.getElementById('settingsTabs');
     var gridEl = document.getElementById('settingsGrid');
     var editingCategory = null;
+    var selectionState = {};
 
     function openSettings() {
       editingCategory = currentConfig.nav[0].key;
+      selectionState = {};
+      currentConfig.nav.forEach(function(item) {
+        selectionState[item.key] = new Set(currentConfig.photos[item.key] || []);
+      });
       overlay.classList.add('open');
       renderSettingsTabs();
       renderSettingsGrid(editingCategory);
@@ -533,34 +653,61 @@
 
     function renderSettingsGrid(category) {
       gridEl.innerHTML = '';
-      var allPhotos = currentConfig.photos.home || [];
-      var selected = currentConfig.photos[category] || [];
+      var allPhotos = currentConfig.photos.all || [];
+      var selected = selectionState[category] || new Set();
 
       allPhotos.forEach(function(photo) {
         var div = document.createElement('div');
-        div.className = 'settings-img' + (selected.indexOf(photo) !== -1 ? ' checked' : '');
+        div.className = 'settings-img' + (selected.has(photo) ? ' checked' : '');
+        div.dataset.photo = photo;
         div.innerHTML = '<img src="' + imgUrl(photo) + '" alt="" loading="lazy">' +
           '<div class="check">&#10003;</div>';
-        div.addEventListener('click', function() {
-          this.classList.toggle('checked');
-        });
         gridEl.appendChild(div);
       });
     }
 
-    function saveSettings() {
-      var items = gridEl.querySelectorAll('.settings-img');
-      var selected = [];
-      var allPhotos = currentConfig.photos.home || [];
-      items.forEach(function(item, i) {
-        if (item.classList.contains('checked')) {
-          selected.push(allPhotos[i]);
-        }
+    gridEl.addEventListener('click', function(e) {
+      var target = e.target.closest('.settings-img');
+      if (target) {
+        target.classList.toggle('checked');
+        var photo = target.dataset.photo;
+        var set = selectionState[editingCategory];
+        if (target.classList.contains('checked')) set.add(photo);
+        else set.delete(photo);
+      }
+    });
+
+    function selectAll() {
+      var allPhotos = currentConfig.photos.all || [];
+      var set = selectionState[editingCategory];
+      allPhotos.forEach(function(p) { set.add(p); });
+      requestAnimationFrame(function() {
+        gridEl.classList.add('batch');
+        var items = gridEl.getElementsByClassName('settings-img');
+        for (var i = 0; i < items.length; i++) items[i].classList.add('checked');
+        gridEl.offsetHeight;
+        gridEl.classList.remove('batch');
       });
-      currentConfig.photos[editingCategory] = selected;
+    }
+
+    function deselectAll() {
+      selectionState[editingCategory].clear();
+      requestAnimationFrame(function() {
+        gridEl.classList.add('batch');
+        var items = gridEl.getElementsByClassName('settings-img');
+        for (var i = 0; i < items.length; i++) items[i].classList.remove('checked');
+        gridEl.offsetHeight;
+        gridEl.classList.remove('batch');
+      });
+    }
+
+    function saveSettings() {
+      var arr = [];
+      selectionState[editingCategory].forEach(function(p) { arr.push(p); });
+      currentConfig.photos[editingCategory] = arr;
       saveConfigToLocal();
       if (currentKey === editingCategory) {
-        initSlider(selected);
+        initSlider(currentConfig.photos[editingCategory]);
       }
       closeSettings();
     }
@@ -623,6 +770,8 @@
     // Settings close/save/reset
     document.getElementById('settingsClose').addEventListener('click', closeSettings);
     document.getElementById('settingsSave').addEventListener('click', saveSettings);
+    document.getElementById('settingsSelectAll').addEventListener('click', selectAll);
+    document.getElementById('settingsDeselectAll').addEventListener('click', deselectAll);
     document.getElementById('settingsReset').addEventListener('click', function() {
       resetConfig();
       closeSettings();
@@ -637,6 +786,8 @@
 
     // ===== Init =====
     loadConfig(function() {
+      speedRange.value = currentConfig.slideInterval;
+      speedLabel.textContent = (currentConfig.slideInterval / 1000).toFixed(1) + 's';
       buildMenu();
       switchCategory('home');
     });
