@@ -453,7 +453,7 @@
       fetch('config.json').then(function(r) { return r.json(); }).then(function(data) {
         defaultConfig = data;
         currentConfig = deepClone(data);
-        fetch('/.netlify/functions/config').then(function(r) { return r.json(); }).then(function(remote) {
+        fetch('/api/config').then(function(r) { return r.json(); }).then(function(remote) {
           if (remote && remote.photos) {
             currentConfig.photos = deepClone(remote.photos);
             if (remote.tagline) currentConfig.tagline = remote.tagline;
@@ -467,7 +467,7 @@
     }
 
     function saveConfigToRemote() {
-      fetch('/.netlify/functions/config', {
+      fetch('/api/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -480,7 +480,7 @@
 
     function resetConfig() {
       currentConfig = deepClone(defaultConfig);
-      fetch('/.netlify/functions/config', { method: 'DELETE' });
+      fetch('/api/config', { method: 'DELETE' });
     }
 
     // ===== Cover Intro =====
