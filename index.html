@@ -452,34 +452,35 @@
     function loadConfig(callback) {
       fetch('config.json').then(function(r) { return r.json(); }).then(function(data) {
         defaultConfig = data;
-        // Check localStorage for saved config
-        var saved = localStorage.getItem('siteConfig');
-        if (saved) {
-          try {
-            var parsed = JSON.parse(saved);
-            currentConfig = deepClone(data);
-            if (parsed.photos) currentConfig.photos = parsed.photos;
-            if (parsed.tagline) currentConfig.tagline = parsed.tagline;
-            if (parsed.nav) currentConfig.nav = parsed.nav;
-          } catch(e) { currentConfig = deepClone(data); }
-        } else {
-          currentConfig = deepClone(data);
-        }
-        callback();
+        currentConfig = deepClone(data);
+        fetch('/.netlify/functions/config').then(function(r) { return r.json(); }).then(function(remote) {
+          if (remote && remote.photos) {
+            currentConfig.photos = deepClone(remote.photos);
+            if (remote.tagline) currentConfig.tagline = remote.tagline;
+            if (remote.nav) currentConfig.nav = remote.nav;
+          }
+          callback();
+        }).catch(function() {
+          callback();
+        });
       });
     }
 
-    function saveConfigToLocal() {
-      localStorage.setItem('siteConfig', JSON.stringify({
-        photos: currentConfig.photos,
-        tagline: currentConfig.tagline,
-        nav: currentConfig.nav,
-      }));
+    function saveConfigToRemote() {
+      fetch('/.netlify/functions/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          photos: currentConfig.photos,
+          tagline: currentConfig.tagline,
+          nav: currentConfig.nav,
+        }),
+      });
     }
 
     function resetConfig() {
       currentConfig = deepClone(defaultConfig);
-      localStorage.removeItem('siteConfig');
+      fetch('/.netlify/functions/config', { method: 'DELETE' });
     }
 
     // ===== Cover Intro =====
@@ -705,7 +706,7 @@
       var arr = [];
       selectionState[editingCategory].forEach(function(p) { arr.push(p); });
       currentConfig.photos[editingCategory] = arr;
-      saveConfigToLocal();
+      saveConfigToRemote();
       if (currentKey === editingCategory) {
         initSlider(currentConfig.photos[editingCategory]);
       }

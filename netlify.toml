@@ -2,6 +2,9 @@
   command = "mkdir -p public && cp -r index.html config.json images public/"
   publish = "public"
 
+[functions]
+  directory = "netlify/functions"
+
 [[headers]]
   for = "/*"
   [headers.values]
