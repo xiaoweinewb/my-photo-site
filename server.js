@@ -22,6 +22,25 @@ function initDB() {
       config_data TEXT
     );
   `);
+  const hasData = db.prepare('SELECT COUNT(*) AS cnt FROM category_photos').get().cnt > 0;
+  if (!hasData) {
+    const defaults = JSON.parse(require('fs').readFileSync(path.join(__dirname, 'config.json'), 'utf-8'));
+    const ins = db.prepare('INSERT INTO category_photos (category, filename) VALUES (?, ?)');
+    const trx = db.transaction(function(photos) {
+      for (var cat in photos) {
+        for (var i = 0; i < photos[cat].length; i++) {
+          ins.run(cat, photos[cat][i]);
+        }
+      }
+    });
+    trx(defaults.photos);
+    db.prepare('REPLACE INTO other_config (id, config_data) VALUES (1, ?)').run(JSON.stringify({
+      tagline: defaults.tagline,
+      nav: defaults.nav,
+      slideInterval: defaults.slideInterval,
+      siteTitle: defaults.siteTitle,
+    }));
+  }
   db.close();
 }
 
