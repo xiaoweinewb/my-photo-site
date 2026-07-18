@@ -206,6 +206,8 @@
       grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
       gap: 10px;
       margin-bottom: 20px;
+      content-visibility: auto;
+      contain-intrinsic-size: 1px 800px;
     }
     .settings-img {
       position: relative; cursor: pointer;
@@ -213,6 +215,8 @@
       aspect-ratio: 3 / 2;
       border: 2px solid transparent;
       transition: border-color 0.2s;
+      content-visibility: auto;
+      contain-intrinsic-size: 100px 67px;
     }
     .settings-img.checked { border-color: #fff; }
     .settings-img:hover { border-color: rgba(255,255,255,0.4); }
