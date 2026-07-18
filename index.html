@@ -458,10 +458,10 @@
         defaultConfig = data;
         currentConfig = deepClone(data);
         fetch('/api/config').then(function(r) { return r.json(); }).then(function(remote) {
-          if (remote && remote.photos) {
+          if (remote && remote.photos && Object.keys(remote.photos).length > 0) {
             currentConfig.photos = deepClone(remote.photos);
-            if (remote.tagline) currentConfig.tagline = remote.tagline;
-            if (remote.nav) currentConfig.nav = remote.nav;
+            if (remote.tagline && Object.keys(remote.tagline).length > 0) currentConfig.tagline = deepClone(remote.tagline);
+            if (remote.nav && remote.nav.length > 0) currentConfig.nav = deepClone(remote.nav);
           }
           callback();
         }).catch(function() {
